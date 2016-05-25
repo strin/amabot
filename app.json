@@ -1,8 +1,8 @@
 {
-  "name": "Python on Heroku example",
-  "description": "A barebones Python app, which can easily be deployed to Heroku.",
+  "name": "AmaBot",
+  "description": "Ask Me Anything Orchestrator",
   "image": "heroku/python",
-  "repository": "https://github.com/heroku/python-getting-started",
-  "keywords": ["python", "django" ],
+  "repository": "https://github.com/strin/amabot",
+  "keywords": ["python", "django" , "amabot", "chatbot", "fb", "messenger"],
   "addons": [ "heroku-postgresql" ]
 }

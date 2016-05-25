@@ -1,5 +1,7 @@
-venv
+.DS_Store
+.ropeproject
 *.pyc
-staticfiles
-.env
-db.sqlite3
+tags
+*.swp
+*.sqlite
+upload/
