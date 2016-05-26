@@ -11,5 +11,6 @@ import amabot.views
 
 urlpatterns = [
     url(r'^$', amabot.views.index, name='index'),
+    url(r'^webhook', amabot.views.webhook),
     url(r'^admin/', include(admin.site.urls)),
 ]
