@@ -18,12 +18,14 @@ def index(request):
 
 class WebhookView(generic.View):
     def get(self, request, *args, **kwargs):
+        print '[get request]'
         if request.GET['hub.verify_token'] == 'amabot_is_awesome':
             return HttpResponse(self.request.GET['hub.challenge'])
         else:
             return HttpResponse('Error, invalid token')
 
     def post(self, request, *args, **kwargs):
+        print '[post request]'
         # Converts the text payload into a python dictionary
         incoming_message = json.loads(self.request.body.decode('utf-8'))
         # Facebook recommends going through every entry since they might send
