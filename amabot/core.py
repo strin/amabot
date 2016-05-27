@@ -1,4 +1,5 @@
 from collections import deque
+from pprint import pprint
 import json
 import amabot.messenger as messenger
 from .models import Conversation
@@ -57,17 +58,24 @@ def post_message(sender_id, recipient_id, text):
     global fan_requests
     global chats
 
+    print '[free imposters]', len(imposters_free),
+    print '[onging chats]', len(chats)
+    print '[pending requests]', len(fan_requests)
+
     (_type, endpoint) = endpoint_by_id(recipient_id)
     if _type == 'imposter': 
         active_chat = filter(lambda chat: chat['imposter'] == sender_id and chat['imposter_page'] == recipient_id,
                         chats)
         if len(active_chat) == 0: # no conversation available.
+            print 'imposter: no active chat found'
             return
         assert len(active_chat) == 1
         active_chat = active_chat[0]
         messenger.send_message(pageid=active_chat['fan_page'],
                                userid=active_chat['fan'],
                                text=text)
+        print 'imposter: found active chat'
+        pprint(active_chat)
         # grow conversation data.
         active_chat['conversation'].append(
             {
@@ -111,6 +119,7 @@ def post_message(sender_id, recipient_id, text):
                 }
             ]
         }
+        print '[match]', request['sender_id'], imposter['sender_id']
         chats.append(chat)
         messenger.send_message(pageid=imposter['imposter_page'], 
                      userid=imposter['sender_id'],
