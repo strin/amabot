@@ -3,7 +3,6 @@ from django.http import HttpResponse
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import Greeting
 import json
 import sys
 from pprint import pprint

@@ -1,5 +1,7 @@
 from collections import deque
+import json
 import amabot.messenger as messenger
+from .models import Conversation
 
 imposters_free = deque()
 fan_requests = deque()
@@ -66,6 +68,21 @@ def post_message(sender_id, recipient_id, text):
         messenger.send_message(pageid=active_chat['fan_page'],
                                userid=active_chat['fan'],
                                text=text)
+        # grow conversation data.
+        active_chat['conversation'].append(
+            {
+                'id': sender_id,
+                'text': text
+            }
+        )
+        conversation = Conversation(imposter_id=active_chat['imposter'],
+                                    fan_id=active_chat['fan'],
+                                    imposter_page=active_chat['imposter_page'],
+                                    fan_page=active_chat['fan_page'],
+                                    content=json.dumps(active_chat['conversation'])
+                                    )
+        conversation.save()
+
         # conversation ends.
         chats.remove(active_chat)
         imposters_free.append({
@@ -86,7 +103,13 @@ def post_message(sender_id, recipient_id, text):
             'fan': request['sender_id'],
             'imposter': imposter['sender_id'],
             'fan_page': request['fan_page'],
-            'imposter_page': imposter['imposter_page']
+            'imposter_page': imposter['imposter_page'],
+            'conversation': [
+                {
+                    'id': request['sender_id'],
+                    'text': request['text']
+                }
+            ]
         }
         chats.append(chat)
         messenger.send_message(pageid=imposter['imposter_page'], 
