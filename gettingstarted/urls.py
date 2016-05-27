@@ -1,6 +1,7 @@
 from django.conf.urls import include, url
 
 from django.contrib import admin
+
 admin.autodiscover()
 
 import amabot.views
@@ -11,6 +12,6 @@ import amabot.views
 
 urlpatterns = [
     url(r'^$', amabot.views.index, name='index'),
-    url(r'^webhook', amabot.views.webhook),
+    url(r'^webhook', amabot.views.webhook_view),
     url(r'^admin/', include(admin.site.urls)),
 ]
