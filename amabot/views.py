@@ -25,7 +25,7 @@ class WebhookView(generic.View):
             return HttpResponse('Error, invalid token')
 
     def post(self, request, *args, **kwargs):
-        print '[post request]'
+        print '[post request]', id(self)
         # Converts the text payload into a python dictionary
         incoming_message = json.loads(self.request.body.decode('utf-8'))
         # Facebook recommends going through every entry since they might send
@@ -39,8 +39,10 @@ class WebhookView(generic.View):
                 print '-----------------------------------------'
                 if 'message' in message:
                     # Print the message to the terminal
+                    print '[posting message]'
                     post_message(message['sender']['id'], message['recipient']['id'], message['message']['text'])
                 else: # start a new conversation, exciting!
+                    print '[adding user]'
                     add_user(message['sender']['id'], message['recipient']['id'])
 
 

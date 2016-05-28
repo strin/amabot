@@ -58,10 +58,6 @@ def post_message(sender_id, recipient_id, text):
     global fan_requests
     global chats
 
-    print '[free imposters]', len(imposters_free),
-    print '[onging chats]', len(chats)
-    print '[pending requests]', len(fan_requests)
-
     (_type, endpoint) = endpoint_by_id(recipient_id)
     if _type == 'imposter': 
         active_chat = filter(lambda chat: chat['imposter'] == sender_id and chat['imposter_page'] == recipient_id,
@@ -75,7 +71,6 @@ def post_message(sender_id, recipient_id, text):
                                userid=active_chat['fan'],
                                text=text)
         print 'imposter: found active chat'
-        pprint(active_chat)
         # grow conversation data.
         active_chat['conversation'].append(
             {
@@ -83,6 +78,7 @@ def post_message(sender_id, recipient_id, text):
                 'text': text
             }
         )
+        pprint(active_chat)
         conversation = Conversation(imposter_id=active_chat['imposter'],
                                     fan_id=active_chat['fan'],
                                     imposter_page=active_chat['imposter_page'],
@@ -125,6 +121,9 @@ def post_message(sender_id, recipient_id, text):
                      userid=imposter['sender_id'],
                      text=request['text'])
 
+    print '[free imposters]', len(imposters_free),
+    print '[onging chats]', len(chats)
+    print '[pending requests]', len(fan_requests)
 
             
 
