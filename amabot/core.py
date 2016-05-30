@@ -4,11 +4,25 @@ import json
 import random
 import amabot.messenger as messenger
 from .models import ConversationModel, ImposterModel
+from datetime import datetime
 
-
+# reload module. initialize.
 fan_requests = deque()
+fan_requests_surfaced = []
 chats = list()
+ImposterModel.objects.all().update(is_free=True)
 
+
+def print_global_stats():
+    global fan_requests
+    global fan_requests_surfaced
+    global chats
+
+    num_free_imposters = len(ImposterModel.objects.filter(is_free=True))
+    print '[free imposters]', num_free_imposters
+    print '[onging chats]', len(chats)
+    print '[pending requests]', len(fan_requests)
+    print '[surfaced requests]', len(fan_requests_surfaced)
 
 def endpoints():
     '''
@@ -56,8 +70,40 @@ def add_user(sender_id, recipient_id, timestamp=None):
         pass
 
 
+def match_imposter(request): # match request with an free imposter.
+    global chats
+
+    free_imposters = ImposterModel.objects.filter(is_free=True)
+    if len(free_imposters):
+        imposter_id = random.randint(0, len(free_imposters)-1)
+        imposter = free_imposters[imposter_id]
+        chat = {
+            'fan': request['sender_id'],
+            'imposter': imposter.imposter_id,
+            'fan_page': request['fan_page'],
+            'imposter_page': imposter.imposter_page,
+            'timestamp': datetime.now(),
+            'conversation': [
+                {
+                    'id': request['sender_id'],
+                    'text': request['text']
+                }
+            ]
+        }
+        print '[match]', request['sender_id'], imposter.imposter_id
+        imposter.is_free = False
+        imposter.save()
+        chats.append(chat)
+        messenger.send_message(pageid=imposter.imposter_page, 
+                     userid=imposter.imposter_id,
+                     text=request['text'])
+        return True
+    return False
+
+
 def post_message(sender_id, recipient_id, text):
     global fan_requests
+    global fan_requests_surfaced
     global chats
 
     (_type, endpoint) = endpoint_by_id(recipient_id)
@@ -104,31 +150,17 @@ def post_message(sender_id, recipient_id, text):
             'text': text
         })
     # match fans to free imposters.
-    free_imposters = ImposterModel.objects.filter(is_free=True)
-    while len(free_imposters) and len(fan_requests):
+    while len(fan_requests):
         request = fan_requests.popleft()
-        imposter_id = random.randint(0, len(free_imposters)-1)
-        imposter = free_imposters[imposter_id]
-        chat = {
-            'fan': request['sender_id'],
-            'imposter': imposter.imposter_id,
-            'fan_page': request['fan_page'],
-            'imposter_page': imposter.imposter_page,
-            'conversation': [
-                {
-                    'id': request['sender_id'],
-                    'text': request['text']
-                }
-            ]
-        }
-        print '[match]', request['sender_id'], imposter.imposter_id
-        chats.append(chat)
-        messenger.send_message(pageid=imposter.imposter_page, 
-                     userid=imposter.imposter_id,
-                     text=request['text'])
+        if not match_imposter(request): # match failed.
+            fan_requests.appendleft(request)
+            break
+        else:
+            fan_requests_surfaced.append(request)
 
-    print '[free imposters]', len(free_imposters),
-    print '[onging chats]', len(chats)
-    print '[pending requests]', len(fan_requests)
+    print_global_stats()
 
-            
+        
+
+
+
