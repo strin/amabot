@@ -8,42 +8,44 @@ import amabot.config as config
 from .models import ConversationModel, ImposterModel
 from datetime import datetime
 
-
-
 # reload module. initialize.
 fan_requests = deque()
 fan_requests_surfaced = []
 chats = list()
+is_inited = False
 
-try:
+
+def init_core_if_necessary():
+    global is_inited
+
+    if is_inited:
+        return
+    is_inited = True
+
+    # Thread to check request TTL.
+    import threading
+
     ImposterModel.objects.all().update(is_free=True)
-except:
-    pass
 
-# Thread to check request TTL.
-import threading
+    def reroute_request(TTL=3600):
+        '''
+        if the request has been surfaced and not responsed in TTL seconds, 
+            then it will be re-routed.
+        '''
+        print 'thread started.'
+        global fan_requests_surfaced
 
-def reroute_request(TTL=3600):
-    '''
-    if the request has been surfaced and not responsed in TTL seconds, 
-        then it will be re-routed.
-    '''
-    print 'thread started.'
-    global fan_requests_surfaced
+        while True:
+            time_now = datetime.now()
+            for request in fan_requests_surfaced:
+                print '[checking]', request['text']
+                if (time_now - request['timestamp']).total_seconds() > TTL:
+                    imposter = match_imposter(request) # match failed.
+                    if imposter is not None:
+                        print '[re-routed]', request['sender_id'], imposter.imposter_id
+            time.sleep(5) 
 
-    while True:
-        time_now = datetime.now()
-        for request in fan_requests_surfaced:
-            print '[checking]', request['text']
-            if (time_now - request['timestamp']).total_seconds() > TTL:
-                imposter = match_imposter(request) # match failed.
-                if imposter is not None:
-                    print '[re-routed]', request['sender_id'], imposter.imposter_id
-        time.sleep(5) 
-
-threading.Thread(target=reroute_request, kwargs=dict(TTL=5)).start()
-
-
+    threading.Thread(target=reroute_request, kwargs=dict(TTL=5)).start()
 
 
 def print_global_stats():
@@ -251,3 +253,4 @@ def handle_postback(sender_id, recipient_id, payload):
                                    text=':)')
     except:
         print '[postback] cannot handle payload', payload
+

@@ -18,4 +18,5 @@ class ImposterModel(models.Model):
     is_free = models.BooleanField()
     
 
-
+class TestModel(models.Model):
+    a = 1

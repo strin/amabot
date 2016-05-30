@@ -9,7 +9,7 @@ from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 
 
-from .core import post_message, add_user, handle_postback
+from .core import post_message, add_user, handle_postback, init_core_if_necessary
 
 # Create your views here.
 def index(request):
@@ -27,6 +27,7 @@ class WebhookView(generic.View):
 
     def post(self, request, *args, **kwargs):
         print '[post request]', id(self)
+        init_core_if_necessary()
         # Converts the text payload into a python dictionary
         incoming_message = json.loads(self.request.body.decode('utf-8'))
         # Facebook recommends going through every entry since they might send
