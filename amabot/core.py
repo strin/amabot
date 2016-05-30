@@ -184,6 +184,25 @@ def post_message(sender_id, recipient_id, text):
         )
         imposter.is_free = True
         imposter.save()
+
+        # feedback. how many conversations this imposter had.
+        past_conversations = ConversationModel.objects.filter(
+                imposter_page=active_chat['imposter_page'],
+                imposter_id=active_chat['imposter']
+            )
+        num_conversations = len(past_conversations)
+        print 'num conversations', num_conversations
+        if num_conversations % 1 == 0:
+            score = [conversation.rating for conversation in past_conversations
+                        if conversation.rating > 0]
+            score = sum(score) / float(len(score))
+            messenger.send_notification_page(
+                    pageid=active_chat['imposter_page'],
+                    userid=active_chat['imposter'],
+                    text='Wow! your current imposter score is %0.1f!' % score
+                )
+
+
     elif _type == 'fan':
         fan_requests.append({
             'sender_id': sender_id,
@@ -215,5 +234,10 @@ def handle_postback(sender_id, recipient_id, payload):
             messenger.send_message(pageid=conversation.fan_page,
                                    userid=conversation.fan_id,
                                    text='thanks!')
+        if 'notification' in payload:
+            print '[postback] notification'
+            messenger.send_message(pageid=recipient_id,
+                                   userid=sender_id,
+                                   text=':)')
     except:
         print '[postback] cannot handle payload', payload

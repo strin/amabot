@@ -38,7 +38,7 @@ def send_rating_page(pageid, userid, text, meta={}):
         "buttons":[
           {
             "type":"postback",
-            "title":u'\u2605\u2605 \u2605',
+            "title":u'\u2605\u2605\u2605',
             "payload": encode_rating(3)
           },
           {
@@ -50,6 +50,25 @@ def send_rating_page(pageid, userid, text, meta={}):
             "type":"postback",
             "title":u'\u2605',
             "payload": encode_rating(1)
+          }
+        ]
+      }
+    }
+    return send_message(pageid, userid, text=None, attachment=attachment)
+
+
+def send_notification_page(pageid, userid, text, meta={}):
+    attachment = {
+      'type': 'template',
+      'payload':{
+        'template_type': 'button',
+        "text":text,
+        "buttons":[
+          {
+            "type":"postback",
+            "title":u'okay',
+            "payload": json.dumps(dict(notification='true',
+                **meta))
           }
         ]
       }

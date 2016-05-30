@@ -16,5 +16,6 @@ class ImposterModel(models.Model):
     imposter_id = models.CharField(max_length=MAX_CHARFIELD_LEN)
     imposter_page = models.CharField(max_length=MAX_CHARFIELD_LEN)
     is_free = models.BooleanField()
+    
 
 
