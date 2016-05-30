@@ -14,7 +14,11 @@ from datetime import datetime
 fan_requests = deque()
 fan_requests_surfaced = []
 chats = list()
-ImposterModel.objects.all().update(is_free=True)
+
+try:
+    ImposterModel.objects.all().update(is_free=True)
+except:
+    pass
 
 # Thread to check request TTL.
 import threading
