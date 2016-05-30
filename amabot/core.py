@@ -1,12 +1,14 @@
 from collections import deque
 from pprint import pprint
 import json
+import random
 import amabot.messenger as messenger
-from .models import Conversation
+from .models import ConversationModel, ImposterModel
 
-imposters_free = deque()
+
 fan_requests = deque()
 chats = list()
+
 
 def endpoints():
     '''
@@ -34,27 +36,27 @@ def add_user(sender_id, recipient_id, timestamp=None):
     '''
     start a conversation session.
     '''
-    global imposters_free
     global chats
 
     (_type, endpoint) = endpoint_by_id(recipient_id)
 
     if _type == 'imposter': # add an imposter.
         if (filter(lambda chat: chat['imposter'] == sender_id, chats) or 
-            filter(lambda imposter: imposter['sender_id'] == sender_id, imposters_free)):
+            ImposterModel.objects.filter(imposter_id=sender_id, imposter_page=recipient_id)):
             print 'imposter already exists', sender_id
         else:
             print 'imposter being added', sender_id
-            imposters_free.append({
-                'sender_id': sender_id,
-                'imposter_page': recipient_id
-            })
+            ImposterModel(
+                imposter_id=sender_id,
+                imposter_page=recipient_id,
+                is_free=True
+            ).save()
+
     else: # add a fan.
         pass
 
 
 def post_message(sender_id, recipient_id, text):
-    global imposters_free
     global fan_requests
     global chats
 
@@ -79,7 +81,7 @@ def post_message(sender_id, recipient_id, text):
             }
         )
         pprint(active_chat)
-        conversation = Conversation(imposter_id=active_chat['imposter'],
+        conversation = ConversationModel(imposter_id=active_chat['imposter'],
                                     fan_id=active_chat['fan'],
                                     imposter_page=active_chat['imposter_page'],
                                     fan_page=active_chat['fan_page'],
@@ -87,12 +89,14 @@ def post_message(sender_id, recipient_id, text):
                                     )
         conversation.save()
 
-        # conversation ends.
+        # conversation ends, and set imposters free.
         chats.remove(active_chat)
-        imposters_free.append({
-            'sender_id': active_chat['imposter'],
-            'imposter_page': active_chat['imposter_page']
-        })
+        imposter = ImposterModel.objects.get(
+            imposter_id=active_chat['imposter'],
+            imposter_page=active_chat['imposter_page']
+        )
+        imposter.is_free = True
+        imposter.save()
     elif _type == 'fan':
         fan_requests.append({
             'sender_id': sender_id,
@@ -100,14 +104,16 @@ def post_message(sender_id, recipient_id, text):
             'text': text
         })
     # match fans to free imposters.
-    while len(imposters_free) and len(fan_requests):
+    free_imposters = ImposterModel.objects.filter(is_free=True)
+    while len(free_imposters) and len(fan_requests):
         request = fan_requests.popleft()
-        imposter = imposters_free.popleft()
+        imposter_id = random.randint(0, len(free_imposters)-1)
+        imposter = free_imposters[imposter_id]
         chat = {
             'fan': request['sender_id'],
-            'imposter': imposter['sender_id'],
+            'imposter': imposter.imposter_id,
             'fan_page': request['fan_page'],
-            'imposter_page': imposter['imposter_page'],
+            'imposter_page': imposter.imposter_page,
             'conversation': [
                 {
                     'id': request['sender_id'],
@@ -115,28 +121,14 @@ def post_message(sender_id, recipient_id, text):
                 }
             ]
         }
-        print '[match]', request['sender_id'], imposter['sender_id']
+        print '[match]', request['sender_id'], imposter.imposter_id
         chats.append(chat)
-        messenger.send_message(pageid=imposter['imposter_page'], 
-                     userid=imposter['sender_id'],
+        messenger.send_message(pageid=imposter.imposter_page, 
+                     userid=imposter.imposter_id,
                      text=request['text'])
 
-    print '[free imposters]', len(imposters_free),
+    print '[free imposters]', len(free_imposters),
     print '[onging chats]', len(chats)
     print '[pending requests]', len(fan_requests)
 
             
-
-
-    
-    
-
-
-
-
-def says_imposter(sender_id):
-    global chat_by_imposter
-    chat = chat_by_imposter[sender_id]
-    if chat is None: # ignored.
-        return
-    
