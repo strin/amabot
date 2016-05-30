@@ -12,7 +12,6 @@ fan_requests = deque()
 fan_requests_surfaced = []
 chats = list()
 ImposterModel.objects.all().update(is_free=True)
-print 'hi'
 
 # Thread to check request TTL.
 import threading
@@ -124,6 +123,10 @@ def match_imposter(request): # match request with an free imposter.
         messenger.send_message(pageid=imposter.imposter_page, 
                      userid=imposter.imposter_id,
                      text=request['text'])
+        #messenger.send_rating_page(pageid=imposter.imposter_page, 
+        #             userid=imposter.imposter_id,
+        #             text='how likely this person is to be Trump?')
+
         return imposter
     
 
