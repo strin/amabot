@@ -4,8 +4,11 @@ import json
 import random
 import time
 import amabot.messenger as messenger
+import amabot.config as config
 from .models import ConversationModel, ImposterModel
 from datetime import datetime
+
+
 
 # reload module. initialize.
 fan_requests = deque()
@@ -169,11 +172,12 @@ def post_message(sender_id, recipient_id, text):
                                     content=json.dumps(active_chat['conversation'])
                                     )
         conversation.save()
-
-        messenger.send_rating_page(pageid=active_chat['fan_page'], 
-                     userid=active_chat['fan'],
-                     text='how\'s my answer? :)',
-                     meta={'conversation_id': conversation.id})
+        
+        if random.random() < config.RATING_PROB:
+            messenger.send_rating_page(pageid=active_chat['fan_page'], 
+                         userid=active_chat['fan'],
+                         text='how\'s my answer? :)',
+                         meta={'conversation_id': conversation.id})
         
 
         # conversation ends, and set imposters free.
@@ -186,21 +190,23 @@ def post_message(sender_id, recipient_id, text):
         imposter.save()
 
         # feedback. how many conversations this imposter had.
-        past_conversations = ConversationModel.objects.filter(
-                imposter_page=active_chat['imposter_page'],
-                imposter_id=active_chat['imposter']
-            )
-        num_conversations = len(past_conversations)
-        print 'num conversations', num_conversations
-        if num_conversations % 1 == 0:
-            score = [conversation.rating for conversation in past_conversations
-                        if conversation.rating > 0]
-            score = sum(score) / float(len(score))
-            messenger.send_notification_page(
-                    pageid=active_chat['imposter_page'],
-                    userid=active_chat['imposter'],
-                    text='Wow! your current imposter score is %0.1f!' % score
+        if random.random() < config.SCORE_PROB:
+            past_conversations = ConversationModel.objects.filter(
+                    imposter_page=active_chat['imposter_page'],
+                    imposter_id=active_chat['imposter']
                 )
+            num_conversations = len(past_conversations)
+            print 'num conversations', num_conversations
+            if num_conversations % 1 == 0:
+                score = [conversation.rating for conversation in past_conversations
+                            if conversation.rating > 0]
+                score = score[-20:]
+                score = sum(score) / float(len(score))
+                messenger.send_notification_page(
+                        pageid=active_chat['imposter_page'],
+                        userid=active_chat['imposter'],
+                        text='Wow! your current imposter score is %0.1f' % score
+                    )
 
 
     elif _type == 'fan':
