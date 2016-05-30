@@ -9,7 +9,7 @@ from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 
 
-from .core import post_message, add_user 
+from .core import post_message, add_user, handle_postback
 
 # Create your views here.
 def index(request):
@@ -38,7 +38,9 @@ class WebhookView(generic.View):
                 print '-----------------message-----------------'
                 pprint(message)
                 print '-----------------------------------------'
-                if 'message' in message:
+                if 'postback' in message:
+                    handle_postback(message['sender']['id'], message['recipient']['id'], message['postback']['payload'])
+                elif 'message' in message:
                     # Print the message to the terminal
                     print '[posting message]'
                     post_message(message['sender']['id'], message['recipient']['id'], message['message']['text'])

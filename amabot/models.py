@@ -9,7 +9,7 @@ class ConversationModel(models.Model):
     imposter_page = models.CharField(max_length=MAX_CHARFIELD_LEN)
     fan_page = models.CharField(max_length=MAX_CHARFIELD_LEN)
     content = models.TextField()
-    rating = models.IntegerField()
+    rating = models.IntegerField(default=0) # not rated by default.
     
 
 class ImposterModel(models.Model):

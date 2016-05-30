@@ -170,6 +170,12 @@ def post_message(sender_id, recipient_id, text):
                                     )
         conversation.save()
 
+        messenger.send_rating_page(pageid=active_chat['fan_page'], 
+                     userid=active_chat['fan'],
+                     text='how\'s my answer? :)',
+                     meta={'conversation_id': conversation.id})
+        
+
         # conversation ends, and set imposters free.
         chats.remove(active_chat)
         imposter = ImposterModel.objects.get(
@@ -197,4 +203,17 @@ def post_message(sender_id, recipient_id, text):
     print_global_stats()
 
         
-
+def handle_postback(sender_id, recipient_id, payload):
+    try:
+        payload = json.loads(payload)
+        if 'rating' in payload:
+            conversation_id = payload['conversation_id']
+            conversation = ConversationModel.objects.get(id=conversation_id)
+            conversation.rating = payload['rating']
+            conversation.save()
+            print '[postback] rating saved for ', conversation.id, conversation.content
+            messenger.send_message(pageid=conversation.fan_page,
+                                   userid=conversation.fan_id,
+                                   text='thanks!')
+    except:
+        print '[postback] cannot handle payload', payload
