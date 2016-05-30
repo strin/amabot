@@ -1,15 +1,16 @@
+import json
+import sys
+from pprint import pprint
+sys.stdout = sys.stderr
+
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 
-import json
-import sys
-from pprint import pprint
 
 from .core import post_message, add_user 
 
-sys.stdout = sys.stderr
 # Create your views here.
 def index(request):
     # return HttpResponse('Hello from Python!')

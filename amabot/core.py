@@ -2,6 +2,7 @@ from collections import deque
 from pprint import pprint
 import json
 import random
+import time
 import amabot.messenger as messenger
 from .models import ConversationModel, ImposterModel
 from datetime import datetime
@@ -11,6 +12,32 @@ fan_requests = deque()
 fan_requests_surfaced = []
 chats = list()
 ImposterModel.objects.all().update(is_free=True)
+print 'hi'
+
+# Thread to check request TTL.
+import threading
+
+def reroute_request(TTL=3600):
+    '''
+    if the request has been surfaced and not responsed in TTL seconds, 
+        then it will be re-routed.
+    '''
+    print 'thread started.'
+    global fan_requests_surfaced
+
+    while True:
+        time_now = datetime.now()
+        for request in fan_requests_surfaced:
+            print '[checking]', request['text']
+            if (time_now - request['timestamp']).total_seconds() > TTL:
+                imposter = match_imposter(request) # match failed.
+                if imposter is not None:
+                    print '[re-routed]', request['sender_id'], imposter.imposter_id
+        time.sleep(5) 
+
+threading.Thread(target=reroute_request, kwargs=dict(TTL=5)).start()
+
+
 
 
 def print_global_stats():
@@ -82,13 +109,13 @@ def match_imposter(request): # match request with an free imposter.
             'imposter': imposter.imposter_id,
             'fan_page': request['fan_page'],
             'imposter_page': imposter.imposter_page,
-            'timestamp': datetime.now(),
             'conversation': [
                 {
                     'id': request['sender_id'],
                     'text': request['text']
                 }
-            ]
+            ],
+            'request': request
         }
         print '[match]', request['sender_id'], imposter.imposter_id
         imposter.is_free = False
@@ -97,8 +124,8 @@ def match_imposter(request): # match request with an free imposter.
         messenger.send_message(pageid=imposter.imposter_page, 
                      userid=imposter.imposter_id,
                      text=request['text'])
-        return True
-    return False
+        return imposter
+    
 
 
 def post_message(sender_id, recipient_id, text):
@@ -115,10 +142,15 @@ def post_message(sender_id, recipient_id, text):
             return
         assert len(active_chat) == 1
         active_chat = active_chat[0]
-        messenger.send_message(pageid=active_chat['fan_page'],
-                               userid=active_chat['fan'],
-                               text=text)
-        print 'imposter: found active chat'
+        if active_chat['request'] in fan_requests_surfaced:
+            messenger.send_message(pageid=active_chat['fan_page'],
+                                   userid=active_chat['fan'],
+                                   text=text)
+            fan_requests_surfaced.remove(active_chat['request'])
+            print '[imposter] found active chat'
+        else:
+            print '[imposter] found active chat, but request invalid, still saving results.'
+
         # grow conversation data.
         active_chat['conversation'].append(
             {
@@ -147,12 +179,13 @@ def post_message(sender_id, recipient_id, text):
         fan_requests.append({
             'sender_id': sender_id,
             'fan_page': recipient_id,
-            'text': text
+            'text': text,
+            'timestamp': datetime.now(),
         })
     # match fans to free imposters.
     while len(fan_requests):
         request = fan_requests.popleft()
-        if not match_imposter(request): # match failed.
+        if match_imposter(request) is None: # match failed.
             fan_requests.appendleft(request)
             break
         else:
@@ -161,6 +194,4 @@ def post_message(sender_id, recipient_id, text):
     print_global_stats()
 
         
-
-
 
