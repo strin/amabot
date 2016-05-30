@@ -43,9 +43,9 @@ def init_core_if_necessary():
                     imposter = match_imposter(request) # match failed.
                     if imposter is not None:
                         print '[re-routed]', request['sender_id'], imposter.imposter_id
-            time.sleep(5) 
+            time.sleep(30) 
 
-    threading.Thread(target=reroute_request, kwargs=dict(TTL=5)).start()
+    threading.Thread(target=reroute_request, kwargs=dict(TTL=1200)).start()
 
 
 def print_global_stats():
@@ -211,7 +211,7 @@ def post_message(sender_id, recipient_id, text):
                 messenger.send_notification_page(
                         pageid=active_chat['imposter_page'],
                         userid=active_chat['imposter'],
-                        text='Wow! your current imposter score is %0.1f' % score
+                        text='Wow! your current imposter score is %0.1f / 3.0' % score
                     )
 
 
